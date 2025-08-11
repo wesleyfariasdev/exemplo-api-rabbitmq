@@ -22,7 +22,10 @@ public static class AppExtensions
                 });
 
                 cfg.ConfigureEndpoints(context);
-                cfg.UseMessageRetry(r => r.Exponential(10, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(5)));
+                cfg.UseMessageRetry(r => r.Exponential(10, 
+                                                       TimeSpan.FromSeconds(1), 
+                                                       TimeSpan.FromSeconds(60), 
+                                                       TimeSpan.FromSeconds(5)));
             });
         });
     }
