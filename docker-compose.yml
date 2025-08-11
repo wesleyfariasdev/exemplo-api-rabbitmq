@@ -1,0 +1,61 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: my-rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  app:
+    image: ${DOCKER_REGISTRY-}exemplorabbitmqapi:dev
+    container_name: exemplorabbitmq-app-1
+    build:
+      context: .
+      dockerfile: ExemploRabbitMQ.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Debug
+        LAUNCHING_FROM_VS: "true"
+      target: base
+    ports:
+      - "32772:8080"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RABBITMQ_HOST=my-rabbit
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+      - ASPNETCORE_LOGGING__CONSOLE__LOGLEVEL__DEFAULT=Debug
+      - ASPNETCORE_LOGGING__CONSOLE__DISABLECOLORS=true
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+    entrypoint: ["dotnet", "--roll-forward", "Major", "/VSTools/DistrolessHelper/DistrolessHelper.dll", "--wait"]
+    volumes:
+      - ./ExemploRabbitMQ.Api:/app
+      - .:/src
+      - C:/Users/Wesley Farias/vsdbg/vs2017u5:/remote_debugger
+      - C:/Users/Wesley Farias/.nuget/packages:/.nuget/packages:ro
+      - C:/Program Files (x86)/Microsoft Visual Studio/Shared/NuGetPackages:/.nuget/fallbackpackages:ro
+      - C:/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Sdks/Microsoft.Docker.Sdk/tools/linux-x64/net8.0:/VSTools:ro
+      - C:/Program Files/Microsoft Visual Studio/2022/Professional/Common7/IDE/CommonExtensions/Microsoft/HotReload:/HotReloadAgent:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    name: my-network
+    driver: bridge
